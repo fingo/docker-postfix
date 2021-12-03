@@ -90,6 +90,26 @@ certs:
 #   hello: world
 secret: {}
 
+# Integration with Kubernetes Secrets Store CSI Driver, which is a multi-cloud and bare metal secrets driver
+# Secrets will be mounted as a volume on pod creation, then destroyed (not stored in the cluster)
+# All secrets are exported as environment variables on container startup. No secrets are visible in Pod specification or in shell except mounted files
+# Docs: https://secrets-store-csi-driver.sigs.k8s.io/introduction.html
+csiSecrets:
+  enabled: false
+  provider: aws
+  objects:
+    smtp:
+        type: secretsmanager
+        arn: "arn:aws:secretsmanager:AAAAAAA:BBBBB:secret:CCCCC"
+        jmesPath:
+            # inside your secret, value of JSON field "username" will be exported as environment variable "RELAYHOST_USERNAME"
+            - name: username
+              path: "RELAYHOST_USERNAME"
+            - name: password
+              path: "RELAYHOST_PASSWORD"
+            - name: host
+              path: "RELAYHOST"
+
 # Use an existing secret to share with the pod
 # as environment variables.
 existingSecret: ""

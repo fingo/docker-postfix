@@ -25,3 +25,13 @@ data:
     do_postconf -e 'smtpd_tls_cert_file=/var/run/certs/tls.crt'
     do_postconf -e 'smtpd_tls_key_file=/var/run/certs/tls.key'
   {{- end }}
+  cloud-entrypoint.sh: |
+    #!/usr/bin/env bash
+
+    {{ if .Values.csiSecrets.enabled }}
+    for file in $(ls /mnt/csi-secrets); do
+        export "${file}"=$(cat /mnt/csi-secrets/${file})
+    done
+    {{ end }}
+
+    exec /run.sh

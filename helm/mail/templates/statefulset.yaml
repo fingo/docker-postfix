@@ -61,6 +61,7 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: ["/bin/sh", "/cloud-entrypoint.sh"]
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext: {{- toYaml .Values.container.postfix.securityContext | indent 12 }}
           ports:
@@ -100,6 +101,14 @@ spec:
               name: private
             - mountPath: /var/spool/postfix/public
               name: public
+            {{- if .Values.csiSecrets.enabled }}
+            - name: csi-secrets
+              mountPath: "/mnt/csi-secrets"
+              readOnly: true
+            {{- end }}
+            - name: entrypoint
+              mountPath: "/cloud-entrypoint.sh"
+              subPath: "cloud-entrypoint.sh"
             {{- if .Values.certs.create }}
             - name: certs
               mountPath: /var/run/certs
@@ -125,6 +134,18 @@ spec:
           emptyDir: {}
         - name: private
           emptyDir: {}
+        {{- if .Values.csiSecrets.enabled }}
+        - name: csi-secrets
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Release.Name }}-csi-secrets
+        {{- end }}
+        - name: entrypoint
+          configMap:
+            name: {{ $fullName }}
+            defaultMode: 0755
         {{- if .Values.certs.create }}
         - name: certs-init
           configMap:
